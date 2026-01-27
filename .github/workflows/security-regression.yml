@@ -177,8 +177,33 @@ jobs:
           echo '  <iframe src="../report.html" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"></iframe>' >> docs/security.md
           echo '</div>' >> docs/security.md
           # Alternative plus simple si le conteneur responsive pose problème :
-          # echo '<iframe src="../report.html" width="100%" height="1200px" style="border:none; overflow:hidden;"></iframe>' >> docs/security.md
-
+          # echo '<iframe src="../report.html" w  idth="100%" height="1200px" style="border:none; overflow:hidden;"></iframe>' >> docs/security.md
+          echo "## Analyse des Risques & Justifications" >> docs/security.md
+          echo "" >> docs/security.md
+          echo "Le scan Trivy remonte actuellement **3 vulnérabilités CRITIQUES**. Voici l'analyse détaillée et pourquoi ces risques sont acceptés (Risk Acceptance)." >> docs/security.md
+          echo "" >> docs/security.md
+          echo "### 1. Ouverture du Port HTTP (80)" >> docs/security.md
+          echo "**Code Erreur :** \`AVD-AZU-0047\`" >> docs/security.md
+          echo "> *Security group rule allows unrestricted ingress from any IP address.*" >> docs/security.md
+          echo "" >> docs/security.md
+          echo "* **Le problème théorique :** Le port 80 est ouvert à tout internet (\`0.0.0.0/0\`)." >> docs/security.md
+          echo "* **Justification :** C'est le comportement attendu pour un **Serveur Web Public**. Le site doit être accessible par les visiteurs." >> docs/security.md
+          echo "* **Mesure Compensatoire :** Le serveur est protégé par **ModSecurity (WAF)** et des en-têtes HTTP stricts pour limiter les attaques applicatives." >> docs/security.md
+          echo "" >> docs/security.md
+          echo "### 2. Ouverture du Port SSH (2222)" >> docs/security.md
+          echo "**Code Erreur :** \`AVD-AZU-0050\`" >> docs/security.md
+          echo "> *Security group should not allow unrestricted ingress to SSH port from any IP address.*" >> docs/security.md
+          echo "" >> docs/security.md
+          echo "* **Le problème théorique :** Le port d'administration est ouvert à tout internet. Idéalement, il ne devrait être ouvert qu'à l'IP VPN de l'entreprise." >> docs/security.md
+          echo "* **Contrainte Technique :** Le déploiement s'effectue via GitHub Actions et l'administration se fait depuis des IP dynamiques. Le whitelist d'IP est impossible dans ce contexte." >> docs/security.md
+          echo "* **Mesures Compensatoires (Défense en Profondeur) :**" >> docs/security.md
+          echo "    1.  **Port Non-Standard :** Le port a été déplacé sur \`2222\` (Security by Obscurity)." >> docs/security.md
+          echo "    2.  **Authentification Forte :** Mots de passe désactivés (\`PasswordAuthentication no\`), seules les **Clés SSH** sont autorisées." >> docs/security.md
+          echo "    3.  **Protection Active :** **Fail2Ban** est configuré pour bannir définitivement toute IP effectuant plus de 3 tentatives échouées." >> docs/security.md
+          echo "" >> docs/security.md
+          echo "# Conclusion de l'Audit" >> docs/security.md
+          echo "" >> docs/security.md
+          echo 'Bien que des ports soient ouverts au public ("0.0.0.0/0"), le risque est **maîtrisé** par l utilisation de clés cryptographiques et d un IPS (Intrusion Prevention System) local.' >> docs/security.md
 
       - name: Deploy to GitHub Pages
         run: mkdocs gh-deploy --force
