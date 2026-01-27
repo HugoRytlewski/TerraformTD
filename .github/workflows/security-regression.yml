@@ -1,0 +1,280 @@
+name: Pipeline DevSecOps - Complete
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+jobs:
+# --- JOB 1 : SÉCURITÉ (Génération HTML Design) ---
+  security_scan:
+    name:  Security Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. CRÉATION DU TEMPLATE HTML (Design Pro)
+      - name: Create Trivy HTML Template
+        run: |
+          cat <<'EOF' > trivy-html.tpl
+          <!DOCTYPE html>
+          <html>
+          <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          {{- if . }}
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f4f6f9; }
+            h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
+            .report-container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); max-width: 1200px; margin: 0 auto; }
+            .target-header { font-size: 1.5em; color: #34495e; margin-top: 40px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+            .sub-header { font-size: 1.2em; color: #666; margin-top: 25px; margin-bottom: 15px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.03); }
+            th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+            th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.9em; }
+            tr:hover { background-color: #f1f3f5; }
+            .severity-badge { display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.85em; text-align: center; min-width: 80px; }
+            .severity-CRITICAL { background-color: #e74c3c; color: white; }
+            .severity-HIGH { background-color: #e67e22; color: white; }
+            .severity-MEDIUM { background-color: #f1c40f; color: #333; }
+            .severity-LOW { background-color: #3498db; color: white; }
+            .links a { color: #3498db; text-decoration: none; }
+            .links a:hover { text-decoration: underline; }
+            .no-issues { text-align: center; padding: 30px; background: #e8f5e9; color: #2e7d32; border-radius: 8px; font-size: 1.1em; font-weight: 500; }
+          </style>
+          <title>Rapport de Sécurité Trivy - {{ now | date "2006-01-02" }}</title>
+          </head>
+          <body>
+          <div class="report-container">
+            <h1> Rapport d'Audit de Sécurité</h1>
+            <p style="text-align: center; color: #666;">Généré automatiquement le {{ now | date "02/01/2006 à 15:04" }} UTC</p>
+
+            {{- range . }}
+            <div class="target-section">
+              <h2 class="target-header">Cible : {{ .Target }}</h2>
+
+              {{- if (and (eq (len .Vulnerabilities) 0) (eq (len .Misconfigurations) 0)) }}
+              <p class="no-issues"> Aucune vulnérabilité ni mauvaise configuration détectée.</p>
+              {{- else }}
+
+              {{- if (gt (len .Vulnerabilities) 0) }}
+              <h3 class="sub-header">Vulnérabilités Logicielles</h3>
+              <table>
+              <thead>
+                <tr><th>Package</th><th>ID</th><th>Sévérité</th><th>Version Installée</th><th>Version Corrigée</th><th>Titre</th></tr>
+              </thead>
+              <tbody>
+                {{- range .Vulnerabilities }}
+                <tr>
+                <td>{{ .PkgName }}</td>
+                <td>{{ .VulnerabilityID }}</td>
+                <td><span class="severity-badge severity-{{ .Severity }}">{{ .Severity }}</span></td>
+                <td>{{ .InstalledVersion }}</td>
+                <td>{{ .FixedVersion }}</td>
+                <td>{{ .Title }}</td>
+                </tr>
+                {{- end }}
+              </tbody>
+              </table>
+              {{- end }}
+
+              {{- if (gt (len .Misconfigurations) 0) }}
+              <h3 class="sub-header">Mauvaises Configurations (IaC)</h3>
+              <table>
+              <thead>
+                <tr><th>Type</th><th>ID</th><th>Sévérité</th><th>Message</th></tr>
+              </thead>
+              <tbody>
+                {{- range .Misconfigurations }}
+                <tr>
+                <td>{{ .Type }}</td>
+                <td>{{ .ID }}</td>
+                <td><span class="severity-badge severity-{{ .Severity }}">{{ .Severity }}</span></td>
+                <td style="white-space: normal;">{{ .Message }}</td>
+                </tr>
+                {{- end }}
+              </tbody>
+              </table>
+              {{- end }}
+
+              {{- end }} </div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
+            {{- end }} </div>
+          {{- else }}
+          <div class="report-container"><h1>Trivy n'a retourné aucun résultat.</h1></div>
+          {{- end }}
+          </body>
+          </html>
+          EOF
+
+      # 2. SCAN & GÉNÉRATION DU FICHIER HTML
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'template'
+          template: '@trivy-html.tpl'
+          output: 'trivy_report.html'
+          scanners: 'vuln,secret,misconfig'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: trivy_report.html
+
+# --- JOB 2 : DOCUMENTATION (Intégration Complète) ---
+  docs_deploy:
+    name:  Deploy Documentation
+    needs: security_scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Install MkDocs Material
+        run: pip install mkdocs-material
+
+      - name: Download Trivy Report
+        uses: actions/download-artifact@v4
+        with:
+          name: security-report
+
+      # C'EST ICI LA CORRECTION : Iframe responsive et scrollable
+      - name: Integrate Report into Docs
+        run: |
+          # 1. On déplace le rapport HTML dans le dossier docs
+          mv trivy_report.html docs/report.html
+          
+          # 2. On crée la page Markdown avec l'iframe optimisée
+          echo "# Rapport de Sécurité" > docs/security.md
+          echo "" >> docs/security.md
+          echo "Rapport généré automatiquement le **$(date '+%d/%m/%Y à %H:%M')**." >> docs/security.md
+          echo "" >> docs/security.md
+          echo '!!! tip "Rapport Interactif"' >> docs/security.md
+          echo '    Ce rapport inclut les vulnérabilités CVE et les mauvaises configurations IaC.' >> docs/security.md
+          echo '    Faites défiler vers le bas pour voir tous les détails.' >> docs/security.md
+          echo "" >> docs/security.md
+          
+          # L'iframe qui prend toute la place et permet le scroll
+          echo '<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">' >> docs/security.md
+          echo '  <iframe src="../report.html" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"></iframe>' >> docs/security.md
+          echo '</div>' >> docs/security.md
+          # Alternative plus simple si le conteneur responsive pose problème :
+          # echo '<iframe src="../report.html" width="100%" height="1200px" style="border:none; overflow:hidden;"></iframe>' >> docs/security.md
+
+
+      - name: Deploy to GitHub Pages
+        run: mkdocs gh-deploy --force
+        
+ # --- JOB 3 : INFRASTRUCTURE (Terraform) ---
+  terraform:
+    name:  Terraform Provisioning
+    needs: security_scan
+    runs-on: ubuntu-latest
+    outputs:
+      SERVER_IP: ${{ steps.get-ip.outputs.SERVER_IP }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - name: Terraform Init & Apply
+        run: |
+          terraform init
+          terraform apply -auto-approve \
+            -var="admin_user=adminuser" \
+            -var="ssh_public_key=${{ secrets.SSH_PUBLIC_KEY }}"
+      - name: Export Server IP
+        id: get-ip
+        run: |
+          IP=$(terraform output -raw server_public_ip)
+          echo "SERVER_IP=$IP" >> $GITHUB_OUTPUT
+
+  # --- JOB 4 : CONFIGURATION (Ansible) ---
+  ansible:
+    name:  Ansible Configuration
+    needs: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configurer SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+
+      # Détection Intelligente du Port
+      - name:  Détection et Attente du Port SSH
+        id: ssh_check
+        run: |
+          IP="${{ needs.terraform.outputs.SERVER_IP }}"
+          echo "Recherche du port SSH sur $IP..."
+          timeout 300s bash -c '
+            while true; do
+              if nc -z -w 2 '$IP' 2222; then
+                echo "DETECTED_PORT=2222" >> $GITHUB_ENV
+                exit 0
+              fi
+              if nc -z -w 2 '$IP' 22; then
+                echo "DETECTED_PORT=22" >> $GITHUB_ENV
+                exit 0
+              fi
+              sleep 5
+            done
+          '
+
+      - name: Lancer Ansible (Sans Vault)
+        run: |
+          echo " Port détecté : ${{ env.DETECTED_PORT }}"
+          
+          echo "[webservers]" > inventory.ini
+          echo "${{ needs.terraform.outputs.SERVER_IP }} ansible_user=adminuser ansible_port=${{ env.DETECTED_PORT }} ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
+          
+          ansible-galaxy collection install community.general --force
+          ansible-galaxy collection install ansible.posix --force
+          
+          # PLUS DE VAULT ICI : Commande simple
+          ansible-playbook -i inventory.ini playbook.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+
+  # --- JOB 5 : VALIDATION ---
+  verify:
+    name:  Tests & Sécurité
+    needs: [terraform, ansible]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Configurer et Exécuter les Tests
+        run: |
+          chmod +x tests/*.sh
+          IP_SERVER="${{ needs.terraform.outputs.SERVER_IP }}"
+          echo "TARGET_IP=\"$IP_SERVER\"" > tests/config.sh
+          echo "TARGET_URL=\"http://$IP_SERVER\"" >> tests/config.sh
+          export TARGET_IP="$IP_SERVER"
+          export TARGET_URL="http://$IP_SERVER"
+          ./tests/check_functional.sh
+          ./tests/check_security.sh

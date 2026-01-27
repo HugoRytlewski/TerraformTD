@@ -1,0 +1,119 @@
+---
+- name: Hardening Avancé Web & Système
+  hosts: webservers
+  become: true
+
+  # ON A SUPPRIMÉ "vars_files" ICI
+
+  tasks:
+    # --- 1. INSTALLATION ---
+    - name: Installer les outils de sécurité
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - fail2ban
+          - ufw
+          - libapache2-mod-security2
+          - unattended-upgrades
+        state: present
+        update_cache: yes
+
+    # --- 2. SSH ---
+    - name: Configurer SSH (Port 2222, Sécurisé)
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#?Port ', line: 'Port 2222' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?X11Forwarding', line: 'X11Forwarding no' }
+      notify: Redémarrer SSH
+
+    # --- 3. HARDENING SYSTÈME ---
+    - name: Activer les mises à jour automatiques
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+
+    - name: Durcissement du Kernel (Sysctl)
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+      loop:
+        - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+        - { name: 'net.ipv4.tcp_syncookies', value: '1' }
+
+    # --- 4. APACHE & WAF ---
+    - name: Activer les modules Apache (Headers & WAF)
+      community.general.apache2_module:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - headers
+        - security2
+      notify: Redémarrer Apache
+
+    - name: Configurer les en-têtes de sécurité
+      ansible.builtin.blockinfile:
+        path: /etc/apache2/conf-available/security.conf
+        block: |
+          Header always set X-Frame-Options "DENY"
+          Header always set X-Content-Type-Options "nosniff"
+          Header always set X-XSS-Protection "1; mode=block"
+          # CSS Externe autorisé, Fonts Google autorisées
+          Header always set Content-Security-Policy "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
+          ServerTokens Prod
+          ServerSignature Off
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - SECURITY HEADERS"
+      notify: Redémarrer Apache
+
+    # --- 5. PAGE WEB ---
+    - name: Déployer le site web (HTML + CSS)
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "/var/www/html/{{ item }}"
+        mode: '0644'
+      loop:
+        - index.html
+        - main.css
+
+    # --- 6. FIREWALL & SERVICES ---
+    - name: Autoriser HTTP et SSH-Custom (2222)
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "80"
+        - "2222"
+
+    - name: Activer UFW
+      community.general.ufw:
+        state: enabled
+
+    - name: Démarrer les services
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - fail2ban
+        - ssh
+        - apache2
+
+  handlers:
+    - name: Redémarrer SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+    - name: Redémarrer Apache
+      ansible.builtin.service:
+        name: apache2
+        state: restarted

@@ -1,0 +1,48 @@
+site_name: Azure DevSecOps
+site_description: Documentation du pipeline de déploiement sécurisé
+site_author: Hugo Rytlewski
+repo_url: https://github.com/HugoRytlewski/TerraformTD
+repo_name: GitHub Repo
+
+theme:
+  name: material
+  language: fr
+  palette:
+    # Mode Clair
+    - scheme: default
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/weather-sunny
+        name: Passer au mode sombre
+    # Mode Sombre
+    - scheme: slate
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/weather-night
+        name: Passer au mode clair
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition # Pour les blocs d'alerte (Note, Warning)
+  - pymdownx.details # Pour les sections pliables
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - attr_list
+  - tables
+
+nav:
+  - Accueil: index.md
+  - Architecture: architecture.md
+  - Pipeline CI/CD: pipeline.md
+  - Sécurité & Audit: security.md
