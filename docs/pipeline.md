@@ -10,11 +10,11 @@ Le schéma ci-dessous illustre l'enchaînement séquentiel des tâches lors d'un
 
 ```mermaid
 graph TD
-    Start([Git Push]) --> Security[Security Scan<br/>(Trivy)]
-    Security -->|Rapport HTML| Docs[Deploy Docs<br/>(MkDocs)]
-    Security --> Infra[Infrastructure<br/>(Terraform)]
-    Infra -->|Output: IP Serveur| Ansible[Configuration<br/>(Ansible)]
-    Ansible --> Verify[Vérification<br/>(Tests Automatisés)]
+    Start([Git Push]) --> Security["Security Scan<br/>(Trivy)"]
+    Security -->|Rapport HTML| Docs["Deploy Docs<br/>(MkDocs)"]
+    Security --> Infra["Infrastructure<br/>(Terraform)"]
+    Infra -->|Output: IP Serveur| Ansible["Configuration<br/>(Ansible)"]
+    Ansible --> Verify["Vérification<br/>(Tests Automatisés)"]
     
     style Security fill:#f9f,stroke:#333,stroke-width:2px
     style Infra fill:#bbf,stroke:#333,stroke-width:2px
