@@ -3,8 +3,6 @@
   hosts: webservers
   become: true
 
-  # ON A SUPPRIMÉ "vars_files" ICI
-
   tasks:
     # --- 1. INSTALLATION ---
     - name: Installer les outils de sécurité
