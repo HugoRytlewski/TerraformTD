@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; background-color: #f4f6f9; }
+  h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
+  .report-container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); max-width: 1200px; margin: 0 auto; }
+  .target-header { font-size: 1.5em; color: #34495e; margin-top: 40px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+  .sub-header { font-size: 1.2em; color: #666; margin-top: 25px; margin-bottom: 15px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 30px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.03); }
+  th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+  th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.9em; }
+  tr:hover { background-color: #f1f3f5; }
+  .severity-badge { display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.85em; text-align: center; min-width: 80px; }
+  .severity-CRITICAL { background-color: #e74c3c; color: white; }
+  .severity-HIGH { background-color: #e67e22; color: white; }
+  .severity-MEDIUM { background-color: #f1c40f; color: #333; }
+  .severity-LOW { background-color: #3498db; color: white; }
+  .links a { color: #3498db; text-decoration: none; }
+  .links a:hover { text-decoration: underline; }
+  .no-issues { text-align: center; padding: 30px; background: #e8f5e9; color: #2e7d32; border-radius: 8px; font-size: 1.1em; font-weight: 500; }
+</style>
+<title>Rapport de Sécurité Trivy - 2026-11-12</title>
+</head>
+<body>
+<div class="report-container">
+  <h1> Rapport d'Audit de Sécurité</h1>
+  <p style="text-align: center; color: #666;">Généré automatiquement le 12/11/2026 à 12:40 UTC</p>
+  <div class="target-section">
+    <h2 class="target-header">Cible : .</h2>
+    <p class="no-issues"> Aucune vulnérabilité ni mauvaise configuration détectée.</p> </div>
+  <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
+  <div class="target-section">
+    <h2 class="target-header">Cible : main.tf</h2>
+    <h3 class="sub-header">Mauvaises Configurations (IaC)</h3>
+    <table>
+    <thead>
+      <tr><th>Type</th><th>ID</th><th>Sévérité</th><th>Message</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+      <td>Terraform Security Check</td>
+      <td>AZU-0047</td>
+      <td><span class="severity-badge severity-CRITICAL">CRITICAL</span></td>
+      <td style="white-space: normal;">Security group rule allows unrestricted ingress from any IP address.</td>
+      </tr>
+      <tr>
+      <td>Terraform Security Check</td>
+      <td>AZU-0047</td>
+      <td><span class="severity-badge severity-CRITICAL">CRITICAL</span></td>
+      <td style="white-space: normal;">Security group rule allows unrestricted ingress from any IP address.</td>
+      </tr>
+      <tr>
+      <td>Terraform Security Check</td>
+      <td>AZU-0050</td>
+      <td><span class="severity-badge severity-CRITICAL">CRITICAL</span></td>
+      <td style="white-space: normal;">Security group rule allows unrestricted ingress to SSH port from any IP address.</td>
+      </tr>
+      <tr>
+      <td>Terraform Security Check</td>
+      <td>AZU-0076</td>
+      <td><span class="severity-badge severity-MEDIUM">MEDIUM</span></td>
+      <td style="white-space: normal;">Network interface has a public IP address assigned, which increases attack surface.</td>
+      </tr>
+    </tbody>
+    </table> </div>
+  <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;"> </div>
+</body>
+</html>
